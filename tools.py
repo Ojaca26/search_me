@@ -2,7 +2,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from langchain_community.document_loaders import WikipediaLoader
-from langchain_tavily import TavilyClient
+from tavily import TavilyClient
+
 
 # =========================================================
 #       WIKIPEDIA LOADER
