@@ -1,11 +1,11 @@
-streamlit
-python-dotenv
+streamlit==1.37.1
+python-dotenv==1.0.1
 
-langchain
-langchain-community
-langchain-core
-langchain-google-genai
-langgraph
+langchain==0.2.12
+langchain-community==0.2.6
+langchain-core==0.2.20
+langchain-google-genai==1.0.6
+langgraph==0.2.22
 
-tavily-python
-wikipedia
+tavily-python==0.4.0
+wikipedia==1.4.0
