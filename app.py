@@ -46,7 +46,19 @@ mermaid_graph = graph.get_graph().draw_mermaid()
 
 # Mostrar Mermaid en expander
 with st.expander("📊 Ver grafo LangGraph (Mermaid)"):
-    st.code(mermaid_graph, language="markdown")
+
+    mermaid_html = f"""
+    <div class="mermaid">
+    {mermaid_graph}
+    </div>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({{ startOnLoad: true }});
+    </script>
+    """
+
+    st.components.v1.html(mermaid_html, height=500, scrolling=True)
 
 # =========================================================
 #   EJECUCIÓN DEL GRAFO
