@@ -1,140 +1,81 @@
-import operator
 import os
-from dotenv import load_dotenv
-import streamlit as st
-from typing import Annotated
-from typing_extensions import TypedDict
-
-from langchain_core.messages import HumanMessage, SystemMessage
-
+import requests
+from bs4 import BeautifulSoup
 from langchain_community.document_loaders import WikipediaLoader
-from langchain_tavily import TavilySearch
-from langchain_google_genai import ChatGoogleGenerativeAI  # << GEMINI
+from langchain_tavily import TavilyClient
 
-from langgraph.graph import StateGraph, START, END
+# =========================================================
+#       WIKIPEDIA LOADER
+# =========================================================
 
-# ================================
-# 1. Configuración inicial
-# ================================
+def tool_wikipedia(query):
+    try:
+        docs = WikipediaLoader(query=query, load_max_docs=2).load()
+        formatted = ""
 
-load_dotenv()
+        for d in docs:
+            formatted += f"\n\n[TÍTULO: {d.metadata.get('title','')}]"
+            formatted += f"\n{d.page_content}\n"
+        return formatted
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
-    temperature=0,
-    google_api_key=os.getenv("GOOGLE_API_KEY")
-)
-
-class State(TypedDict):
-    question: str
-    answer: str
-    context: Annotated[list, operator.add]
+    except Exception as e:
+        return f"[Wikipedia Error] {e}"
 
 
-# ================================
-# 2. Nodos
-# ================================
+# =========================================================
+#       SERPER SEARCH
+# =========================================================
+def tool_serper_search(query):
+    SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+    url = "https://google.serper.dev/search"
 
-def search_web(state):
+    payload = {
+        "q": query,
+        "gl": "co",
+        "hl": "es"
+    }
 
-    tavily_key = os.getenv("TAVILY_API_KEY")
+    headers = {
+        "X-API-KEY": SERPER_API_KEY,
+        "Content-Type": "application/json"
+    }
 
-    tavily_search = TavilySearch(
-        max_results=3,
-        tavily_api_key=tavily_key
-    )
+    try:
+        res = requests.post(url, json=payload, headers=headers).json()
+        results = res.get("organic", [])
 
-    search_docs = tavily_search.invoke(state["question"])
-    results = search_docs.get("results", [])
+        formatted = ""
+        for r in results[:7]:
+            formatted += f"\n\n### {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}"
+        return formatted
 
-    formatted = "\n\n---\n\n".join([
-        f'<Document href="{doc["url"]}"/>\n{doc["content"]}\n</Document>'
-        for doc in results
-    ])
-
-    return {"context": [formatted]}
-
-
-def search_wikipedia(state):
-
-    search_docs = WikipediaLoader(
-        query=state["question"],
-        load_max_docs=2
-    ).load()
-
-    formatted = "\n\n---\n\n".join([
-        f'<Document source="{doc.metadata["source"]}" page="{doc.metadata.get("page","")}"/>\n{doc.page_content}\n</Document>'
-        for doc in search_docs
-    ])
-
-    return {"context": [formatted]}
+    except Exception as e:
+        return f"[Serper Error] {e}"
 
 
-def generate_answer(state):
+# =========================================================
+#       TAVILY SEARCH (Scraping profundo)
+# =========================================================
+def tool_tavily_scrape(query):
+    TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
-    context = state["context"]
-    question = state["question"]
+    tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
-    template = f"""
-Responde de forma clara y directa usando únicamente el siguiente contexto:
+    try:
+        result = tavily.search(
+            query=query,
+            include_raw_content=True,
+            include_domains=["*"],
+            max_results=7
+        )
 
-Pregunta:
-{question}
+        formatted = ""
+        for i in result.get("results", []):
+            formatted += f"\n\n## {i['title']}\n"
+            formatted += f"{i.get('raw_content','')[:2000]}"
+            formatted += f"\nURL: {i['url']}\n"
 
-Contexto:
-{context}
-"""
+        return formatted
 
-    answer = llm.invoke([
-        SystemMessage(content=template),
-        HumanMessage(content="Responde la pregunta.")
-    ])
-
-    return {"answer": answer}
-
-
-# ================================
-# 3. Construcción del Grafo
-# ================================
-
-builder = StateGraph(State)
-
-builder.add_node("search_web", search_web)
-builder.add_node("search_wikipedia", search_wikipedia)
-builder.add_node("generate_answer", generate_answer)
-
-builder.add_edge(START, "search_wikipedia")
-builder.add_edge(START, "search_web")
-
-builder.add_edge("search_wikipedia", "generate_answer")
-builder.add_edge("search_web", "generate_answer")
-
-builder.add_edge("generate_answer", END)
-
-graph = builder.compile()
-
-
-# ================================
-# 4. Interfaz en Streamlit
-# ================================
-
-st.title("🔎 Agente Web + Wikipedia con Gemini 2.0-Flash")
-st.write("Haz una pregunta y la IA buscará información en la web y en Wikipedia.")
-
-question = st.text_input("Escribe tu pregunta:")
-
-if st.button("Preguntar"):
-
-    if not question:
-        st.warning("Por favor ingresa una pregunta.")
-    else:
-        with st.spinner("Buscando información…"):
-
-            result = graph.invoke({"question": question})
-            final_answer = result["answer"].content
-
-        st.subheader("❓ Tu pregunta")
-        st.write(question)
-
-        st.subheader("💡 Respuesta del agente")
-        st.write(final_answer)
+    except Exception as e:
+        return f"[Tavily Error] {e}"
