@@ -6,6 +6,7 @@ langchain-community==0.2.6
 langchain-core==0.2.20
 langchain-google-genai==1.0.6
 langgraph==0.2.22
+langchain-tavily
 
 tavily-python==0.4.0
 wikipedia==1.4.0
