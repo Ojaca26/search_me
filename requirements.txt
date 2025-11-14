@@ -1,0 +1,15 @@
+streamlit
+python-dotenv
+
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+langgraph
+
+langchain-tavily
+tavily-python
+wikipedia
+
+requests
+beautifulsoup4
