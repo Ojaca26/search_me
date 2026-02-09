@@ -28,13 +28,13 @@ with st.sidebar:
     Ingresas una pregunta → la IA investiga → analiza → entrega insights empresariales.
     """)
     st.divider()
-    st.caption("Power by DataInsights + Gemini 2.5 Flash")
+    st.caption("Power by Oscar Carabali + Gemini 2.5 Flash")
 
 # =========================================================
 #   INTERFAZ PRINCIPAL
 # =========================================================
 st.title("🔎 Asistente de Investigación Empresarial")
-st.write("Haz una pregunta, por ejemplo: **“Analiza los competidores de Datainsights”**")
+st.write("Haz una pregunta, por ejemplo: **“Analiza los competidores del grupo Argos”**")
 
 user_question = st.text_input("Tu pregunta:")
 
