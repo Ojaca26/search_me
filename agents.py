@@ -109,5 +109,5 @@ def composer_agent(result):
     {result}
 
     ---
-    _Asistente IA BI — Powered by DataInsights + Gemini 2.5 Flash_
+    _Asistente IA BI — Powered by Oscar Carabali + Gemini 2.5 Flash_
     """
